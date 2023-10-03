@@ -1,5 +1,5 @@
 <template>
-    <div class="h-96vh p-2 w-full select-text overflow-y-scroll flex-1 dark:bg-dark-400" style="overscroll-behavior: auto;">
+    <div class="h-90vh p-2 select-text overflow-y-scroll flex-1 dark:bg-dark-400">
 
         <el-button @click="_e => {
             test()

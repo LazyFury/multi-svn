@@ -21,7 +21,7 @@
                             </div>
                             <span class="text-sm dark:text-dark-50"> {{ p.lastUpdate }}</span>
                         </div>
-                    <ElButton @click="update(p, i)">update</ElButton>
+                    <ElButton @click="update(p, i)">refresh</ElButton>
                 </li>
             </ul>
         </div>

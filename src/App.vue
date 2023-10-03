@@ -17,9 +17,9 @@ onMounted(async ()=>{
   <div class="box-border select-none dark" style="overscroll-behavior: none;">
     <!-- <header data-tauri-drag-region class="w-100vw h-24px fixed left-0 top-0 justify-end flex flex-row items-center pr-4 dark:bg-dark-500 dark:text-dark-50 box-border">
     </header> -->
-    <div class="flex flex-row h-100vh pb-6 dark:text-white">
+    <div class="flex flex-row h-100vh pb-6 overflow-y-scroll dark:text-white">
       <SideMenu></SideMenu>
-      <div class="flex-1">
+      <div class="flex-1 overflow-hidden">
         <router-view></router-view>
       </div>
     </div>
