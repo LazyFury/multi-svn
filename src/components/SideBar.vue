@@ -1,5 +1,5 @@
 <template>
-    <div class="w-240px dark:bg-dark-600 p-2">
+    <div class="w-240px select-none dark:bg-dark-600 p-2">
         <RouterLink to="/">
             <div class="mb-2 flex flex-row items-center justify-between">
                 <h1 class="text-2xl">
@@ -10,22 +10,39 @@
             </div>
         </RouterLink>
 
-        <div class="projects  overflow-y-scroll h-82vh">
+        <ElRadioGroup class="mb-2 ml-2" size="small" v-model="filter">
+            <ElRadioButton label="All"></ElRadioButton>
+            <ElRadioButton label="Clean"></ElRadioButton>
+            <ElRadioButton label="Dirty"></ElRadioButton>
+            <ElRadioButton label="Invalid"></ElRadioButton>
+        </ElRadioGroup>
+
+        <div class="projects  overflow-y-scroll h-72vh">
             <ul>
-                <li v-for="(p, i) in projects" :key="i" class="cursor-pointer select-none  px-2 py-1 dark:text-gray-500"
+                <li v-for="(p, i) in filterProjects" :key="i" class="cursor-pointer select-none  px-2 py-1 dark:text-gray-500"
                     :class="{ 'dark:bg-dark-400 dark:text-gray-50': i == projectIndex }" @click="toDetail(p, i)">
-                        <div>
-                            <div class="">
-                                <span class="break-words whitespace-normal">{{ p.name }}</span>
-                                [{{ p.isClean ? '✅' : '❌' }}]
-                            </div>
-                            <span class="text-sm dark:text-dark-50"> {{ p.lastUpdate }}</span>
+                    <div>
+                        <div class="break-words whitespace-normal">
+                            <Icon class=" text-xl" v-if="refreshingLoading[i]" icon="svg-spinners:bars-scale-fade"></Icon>
+                            <span v-else>[{{ p.isClean ? '✅' : '❌' }}]</span>
+                            <span class="">{{ p.name }}</span>
                         </div>
-                    <ElButton @click="update(p, i)">refresh</ElButton>
+                        <div class="text-red-300" v-if="!p.validate">
+                            <span>working copy is rename or move</span>
+                        </div>
+                        <span class="text-xs dark:text-dark-50"> {{ dayjs(p.lastUpdate).format("YYYY-MM-DD HH:mm:ss") }}</span>
+                    </div>
                 </li>
             </ul>
         </div>
 
+
+
+        <ElButton size="small" :loading="refreshingAllLoading" @click="refresh()" class="my-4 w-full">
+            <Icon v-if="!refreshingAllLoading" icon="zondicons:refresh" class="text-md mr-1"></Icon>
+            <span v-if="!refreshingAllLoading">Refresh All Status</span>
+            <span v-else>refreshing</span>
+        </ElButton>
     </div>
 </template>
 
@@ -34,18 +51,52 @@ import { useStorage } from '@vueuse/core';
 import { Keys } from '../common/keys';
 import { ProjectImpl } from '../common/project';
 import router from '../router';
+import { wait } from '../common/utils/wait';
+import dayjs from 'dayjs';
+import { ElRadioButton, ElRadioGroup } from 'element-plus';
+
+const filter = ref("All")
 const projectIndex = useStorage(Keys.projectIndex, -1)
 const projects = useStorage<Array<ProjectImpl>>(Keys.projects, [])
+const refreshingAllLoading = ref(false)
+const refreshingLoading = ref<{[key:string]:Boolean}>({})
 
-const update = async (project: any, i: number) => {
-    console.log(project)
-    let p = ProjectImpl.fromProject(project)
-    await p.updateInfo()
-    projects.value[i] = p
-}
+
+const filterProjects = computed(()=>{
+    if(filter.value == "All"){
+        return projects.value
+    }else if(filter.value == "Clean"){
+        return projects.value.filter(p=>p.isClean)
+    }else if(filter.value == "Dirty"){
+        return projects.value.filter(p=>!p.isClean)
+    }else if(filter.value == "Invalid"){
+        return projects.value.filter(p=>!p.validate)
+    }
+    return projects.value
+})
+
+
 
 const toDetail = (project: any, i: number) => {
     projectIndex.value = i
     router.push("/home/project?id=" + project.path)
+    debugger
+}
+
+const refresh = async () => {
+    refreshingAllLoading.value = true
+    for (let i = 0; i < projects.value.length; i++) {
+        refreshingLoading.value[i] = true
+        projects.value[i].isClean = false
+        let proj = ProjectImpl.fromProject(projects.value[i])
+        await proj.updateInfo().catch(()=>{
+            proj.validate = false
+            return Promise.resolve({})
+        })
+        await wait(100)
+        projects.value[i] = proj
+        refreshingLoading.value[i] = false
+    }
+    refreshingAllLoading.value = false
 }
 </script>

@@ -15,7 +15,16 @@
       "all": false,
       "shell": {
         "all": false,
-        "open": true
+        "open": true,
+        "execute": true,
+        "sidecar": true,
+        "scope": [
+        {
+          "name": "which",
+          "args": true,
+          "cmd": "which"
+        }
+        ]
       },
       "window": {
         "all": true,

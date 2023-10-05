@@ -3,14 +3,27 @@
 // Check out https://vuejs.org/api/sfc-script-setup.html#script-setup
 import { RouterView } from 'vue-router'
 import { SvnUtils } from './common/SvnUtils';
+import { ElDrawer } from 'element-plus';
+import { useStorage } from '@vueuse/core';
+import { Keys } from './common/keys';
 
 const version = ref("--")
 const compiled = ref("")
+const logDrawerRef = ref<InstanceType<typeof ElDrawer>>()
+  const showDrawer = ref(false)
+const logs = useStorage<Array<any>>(Keys.logs,[]);
 onMounted(async ()=>{
   version.value = (await SvnUtils.versionGet()).stdout
   compiled.value = (await SvnUtils.compiledGet()).compiled
 })
-
+const showLogs = () => {
+  logs.value = JSON.parse(localStorage.getItem(Keys.logs)||"[]");
+  showDrawer.value = true;
+}
+const clearLogs = () => {
+  logs.value = []
+  localStorage.setItem(Keys.logs,JSON.stringify(logs.value))
+}
 </script>
 
 <template>
@@ -19,16 +32,32 @@ onMounted(async ()=>{
     </header> -->
     <div class="flex flex-row h-100vh pb-6 overflow-y-scroll dark:text-white">
       <SideMenu></SideMenu>
-      <div class="flex-1 overflow-hidden">
+      <div class="flex-1 overflow-hidden select-text">
         <router-view></router-view>
       </div>
     </div>
-    <footer class="fixed left-0 bottom-0 w-100vw text-sm p-1 flex flex-row items-center dark:text-gray-400 dark:bg-dark-600">
+    <footer class="fixed select-text left-0 bottom-0 w-100vw text-sm p-1 flex flex-row items-center dark:text-gray-400 dark:bg-dark-600">
       <Icon icon="ant-design:info-circle-filled" class="mr-1"></Icon>
       <div>Svn: v{{version}} _ {{ compiled }}</div>
       <div class="flex-1"></div>
-      <Icon icon="mdi:math-log" class="text-xl mr-2"></Icon>
+      <Icon icon="mdi:math-log" @click="showLogs()" class="text-xl mr-2"></Icon>
     </footer>
+
+    <ElDrawer ref="logDrawerRef" v-model="showDrawer" size="500" title="log">
+      <div class="text-sm">
+        <div v-for="l in logs" :key="l.toString()">
+          <div>
+            <span class="text-green-600 bg-white">>>{{l.program}} {{ l.args.join(" ") }}</span>
+          </div>
+          <div><span>working on：{{ l.dir }}</span></div>
+          <div class="dark:text-gray-400" v-html="l.stdout.split('\n').join('<br>') + '<br>'"></div>
+          <div class="dark:text-red-600" v-html="l.stderr.split('\n').join('<br>') + '<br>'"></div>
+        </div>
+      </div>
+      <template #footer>
+        <ElButton @click="clearLogs()">clear</ElButton>
+      </template>
+    </ElDrawer>
   </div>
 </template>
 

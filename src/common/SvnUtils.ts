@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/tauri'
+import { Keys } from './keys'
 
 export type CommandlineOutput = {
     stdout: string,
@@ -96,17 +97,35 @@ type SvnServeInfo = {
 
 
 export class SvnUtils {
-    static program = "/opt/subversion/bin/svn";
+    static program(){
+        let location = localStorage.getItem(Keys.svnLocation)
+        if(location)return location
+        return "svn"
+    }
     static root = "/";//some command no work path use root
 
+    // write log to localStorage
+    static log(output: CommandlineOutput) {
+        console.log("SvnUtils:", output)
+        let logs = localStorage.getItem(Keys.logs) || ""
+        try {
+            let arr = JSON.parse(logs) || []
+            arr.push(output)
+            localStorage.setItem(Keys.logs, JSON.stringify(arr))
+        }catch{}
+    }
+
     static async command(dir: string, ...args: string[]) {
+        // console.log(this.program())
         let output = await invoke<CommandlineOutput>('run', {
-            program: this.program,
+            program: this.program(),
             args,
             dir
+        }).catch(err=>{
+            throw console.log(err)
         })
 
-        console.log("SvnUtils:", output)
+        this.log(output)
 
         return output;
     }
@@ -138,9 +157,8 @@ export class SvnUtils {
         let files: object[] = []
         for (let line of lines) {
             let file = line.trim()
-            let split = file.split(" ")
-            let status = split[0];
-            let f = split[split.length - 1];
+            let [status,...name] = file.split(" ")
+            let f = name.join(" ");
             let text = this.statusToText(status)
             let emoji = this.statusToEmoji(status)
             if (file) files.push({
@@ -173,6 +191,35 @@ export class SvnUtils {
         }
     }
 
+    // status list key val 
+    static statusKeys() {
+        return {
+            "A": "Added",
+            "C": "Conflicted",
+            "D": "Deleted",
+            "I": "Ignored",
+            "M": "Modified",
+            "R": "Replaced",
+            "X": "External",
+            "?": "Not Controlled",
+            "!": "Missing",
+            "~": "Obstructed",
+            "L": "Locked",
+            "E": "Exist",
+            "T": "Tree Conflicted",
+        }
+    }
+
+    // statusKeys to array 
+    static statusKeysToArray() {
+        let keys:{[key:string]:string} = this.statusKeys()
+        let arr = []
+        for (let key in keys) {
+            arr.push({ text:keys[key], value: keys[key] })
+        }
+        return arr
+    }
+
     // svn file status to emoji icon 
     static statusToEmoji(status: string) {
         switch (status) {
@@ -198,7 +245,7 @@ export class SvnUtils {
      *  ? = add,delete,ignore
      *  A = commit
      */
-    static statusAction(status: string) {
+    static statusActions(status: string) {
         switch (status) {
             case "A": return ["commit"]
             case "C": return []
@@ -207,8 +254,8 @@ export class SvnUtils {
             case "M": return ["commit"]
             case "R": return ["commit"]
             case "X": return []
-            case "?": return ["add", "delete", "ignore"]
-            case "!": return ["delete"]
+            case "?": return ["add", "ignore"]
+            case "!": return ["delete","restore"]
             case "~": return []
             case "L": return []
             case "E": return []
@@ -246,7 +293,7 @@ export class SvnUtils {
 
     // commit with selected file 
     static async commit(dir: string, message: string, files: string[]) {
-        return this.command(dir, "commit", "-m", message, ...files)
+        return this.command(dir, "commit", "-m", `"${message}"`, ...files)
     }
 
     // commit all 
@@ -254,15 +301,23 @@ export class SvnUtils {
         return this.command(dir, "commit", "-m", message)
     }
 
-    // cleanup
-    static async cleanup(dir: string) {
-        return this.command(dir, "cleanup")
-    }
-
     // delete file 
     static async delete(dir: string, file: string) {
-        return this.command(dir, "delete", file)
+        return this.command(dir,"delete", file)
     }
+
+    // add file 
+    static async add(dir: string, file: string) {
+        return this.command(dir,"add", file)
+    }
+
+    // ignore file 
+    static async ignore(dir: string, file: string) {
+        let ignoreGetResult = await this.command(dir,"propget", "svn:ignore", ".")
+        let ignore = ignoreGetResult.stdout
+        return this.command(dir,"propset", "svn:ignore", ignore + file, ".")
+    }
+
 
     // list server  
     static async listServer(url: string) {
@@ -333,5 +388,16 @@ export class SvnUtils {
         let output = await this.command(this.root, "info", url)
         console.log(output.stdout)
         return new CommandlineResult<SvnServeInfo>(output)
+    }
+
+    // findSvn 
+    static async findSvn() {
+        let output = await invoke<CommandlineOutput>("run",{
+            program: "which",
+            args: ["svn"],
+            dir:this.root
+        })
+        let location = output.stdout
+        return location ? location.replace(/\n$/,"") : "svn"
     }
 }

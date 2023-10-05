@@ -1,25 +1,26 @@
 <template>
-    <div class="h-90vh p-2 select-text overflow-y-scroll flex-1 dark:bg-dark-400">
+    <div class="p-2 select-text">
 
-        <el-button @click="_e => {
-            test()
-        }" type="primary">
-            click
-        </el-button>
-
-        <div class="drag-area w-full h-200px bg-gray-500 flex flex-col items-center justify-center">
-            drap folder here
+        <div class="drag-area w-full h-200px bg-dark-800 mb-4 flex flex-col items-center justify-center">
+            <Icon icon="tabler:drag-drop" class="text-5xl mb-4"></Icon>
+            <span>
+                Drap Folder Here To Add Project
+            </span>
         </div>
 
+
         <div>
-            <div v-for=" (folder, i)  in  folders" :key="folder">
-                <p>{{ folder }}</p>
-                <div>
-                    <el-button @click="del(i)">del</el-button>
-                    <el-button @click="checkSvn(i)">check Svn</el-button>
-                    <el-button @click="addProject(folder)" type="primary">add project</el-button>
-                </div>
-            </div>
+            <h1 class="text-xl mb-2">Add History</h1>
+            <ElTable :data="folders">
+                <ElTableColumn prop="folder" label="folder"></ElTableColumn>
+                <ElTableColumn label="actions">
+                    <template #default="scope">
+                        <ElButton @click="addProject(scope.row.folder)" size="small" type="primary">Add To Project</ElButton>
+                        <ElButton @click="checkSvn(scope.row.folder)" size="small">Test</ElButton>
+                        <ElButton @click="del(scope.$index)" size="small" type="danger">del</ElButton>
+                    </template>
+                </ElTableColumn>
+            </ElTable>
         </div>
     </div>
 </template>
@@ -30,38 +31,36 @@ import { listen } from '@tauri-apps/api/event'
 import { useStorage } from '@vueuse/core';
 import { Keys } from '../../common/keys';
 
-import { invoke } from '@tauri-apps/api/tauri'
-import { CommandlineOutput, SvnUtils } from '../../common/SvnUtils';
-import { ElMessage, dayjs } from 'element-plus';
+import {  SvnUtils } from '../../common/SvnUtils';
+import { ElMessage } from 'element-plus';
 import { ProjectImpl } from '../../common/project';
 
 
-const folders = useStorage<Array<string>>(Keys.folders, [])
+const folders = useStorage<Array<any>>(Keys.folders, [])
 const projects = useStorage<Array<ProjectImpl>>(Keys.projects, [])
-const test = async () => {
-    // let output = await invoke("run",{program:"zsh",dir:"/",args:["-c","echo hello"]})
-    let output = await invoke<CommandlineOutput>("run", { program: "zsh", dir: "/", args: ["-c", "which svn"] })
-    console.log(output)
+// const test = async () => {
+//     // let output = await invoke("run",{program:"zsh",dir:"/",args:["-c","echo hello"]})
+//     let output = await invoke<CommandlineOutput>("run", { program: "zsh", dir: "/", args: ["-c", "which svn"] })
+//     console.log(output)
 
-    let svn = await invoke<CommandlineOutput>("run", { program: output.stdout.replace(/\n/g, ''), dir: "/", args: ["--version"] })
-    console.log(svn.stdout)
+//     let svn = await invoke<CommandlineOutput>("run", { program: output.stdout.replace(/\n/g, ''), dir: "/", args: ["--version"] })
+//     console.log(svn.stdout)
 
-    let dir = "/Users/suke/Desktop/项目/铁硬钢强/core"
-    let isSvn = await SvnUtils.isWorkingCopy(dir)
-    console.log(isSvn)
-    if (isSvn) {
-        let info = (await SvnUtils.info(dir)).format()
-        let Last_Changed_Date = dayjs(info.Last_Changed_Date).format("YYYY-MM-DD HH:mm:ss")
-        console.log(Last_Changed_Date, info.Last_Changed_Author)
-    }
-}
+//     let dir = "/Users/suke/Desktop/项目/铁硬钢强/core"
+//     let isSvn = await SvnUtils.isWorkingCopy(dir)
+//     console.log(isSvn)
+//     if (isSvn) {
+//         let info = (await SvnUtils.info(dir)).format()
+//         let Last_Changed_Date = dayjs(info.Last_Changed_Date).format("YYYY-MM-DD HH:mm:ss")
+//         console.log(Last_Changed_Date, info.Last_Changed_Author)
+//     }
+// }
 
 const del = (i: number) => {
     folders.value.splice(i, 1)
 }
 
-const checkSvn = async (i: number) => {
-    let folder = folders.value[i]
+const checkSvn = async (folder:string) => {
     let isSvn = await SvnUtils.isWorkingCopy(folder)
     if (!isSvn) {
         ElMessage({
@@ -74,6 +73,7 @@ const checkSvn = async (i: number) => {
             type: 'success'
         })
     }
+    return isSvn
 }
 
 const addProject = async (folder: string) => {
@@ -99,11 +99,23 @@ const addProject = async (folder: string) => {
     projects.value.unshift(project)
 }
 
-listen('tauri://file-drop', (result) => {
+listen('tauri://file-drop', async (result) => {
     if (!result.payload) return
     let list = result.payload as Array<string>
     for (let i = 0; i < list.length; i++) {
-        folders.value.unshift(list[i])
+        let folder = list[i];
+        if(/(\.)/.test(folder)){
+            return ElMessage({message:"not support file",type:"error"});
+        }
+        if (folders.value.find(f => f.folder == folder)) {
+            return ElMessage({message:"folder already exists",type:"error"});
+        }
+        if (! await checkSvn(folder)) {
+            return;
+        }
+        folders.value.unshift({
+            folder
+        })
     }
 })
 </script>

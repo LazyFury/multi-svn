@@ -13,7 +13,8 @@ struct CommandlineResult {
     stderr: String,
     status: Option<i32>,
     dir: String,
-    args:Vec<String>
+    args:Vec<String>,
+    program: String
 }
 
 
@@ -24,7 +25,8 @@ async fn run(program:&str,dir:&str,args:Vec<&str>) -> Result<CommandlineResult,C
         stderr: "".to_string(),
         status: Option::None,
         dir: dir.to_string(),
-        args: args.iter().map(|s| s.to_string()).collect()
+        args: args.iter().map(|s| s.to_string()).collect(),
+        program: program.to_string()
     };
 
     let mut shell = std::process::Command::new(program);
@@ -35,7 +37,7 @@ async fn run(program:&str,dir:&str,args:Vec<&str>) -> Result<CommandlineResult,C
     match output {
         Ok(output) => {
             result.status = output.status.code();
-            result.stdout = String::from_utf8(output.stdout).unwrap();
+            result.stdout = format!("{}", String::from_utf8_lossy(&output.stdout));
             return Ok(result)
         },
         Err(e) => {
