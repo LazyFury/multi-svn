@@ -31,13 +31,18 @@ async fn run(program:&str,dir:&str,args:Vec<&str>) -> Result<CommandlineResult,C
 
     let mut shell = std::process::Command::new(program);
     shell.current_dir(dir);
+    shell.env_clear();
+    shell.env("LC_ALL", "en_US.UTF-8");
+    shell.env("LANG", "en_US.UTF-8");
     shell.args(args);
+
 
     let output = shell.output();
     match output {
         Ok(output) => {
+            let stdout = format!("{}", String::from_utf8_lossy(&output.stdout));
             result.status = output.status.code();
-            result.stdout = format!("{}", String::from_utf8_lossy(&output.stdout));
+            result.stdout = stdout;
             return Ok(result)
         },
         Err(e) => {

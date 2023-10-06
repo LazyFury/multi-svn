@@ -393,8 +393,8 @@ export class SvnUtils {
     // findSvn 
     static async findSvn() {
         let output = await invoke<CommandlineOutput>("run",{
-            program: "which",
-            args: ["svn"],
+            program: "sh",
+            args: ["-c","which svn"],
             dir:this.root
         })
         let location = output.stdout
