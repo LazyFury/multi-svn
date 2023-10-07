@@ -31,8 +31,8 @@
             <ElTableColumn>
                 <template #default="scope">
                     <ElButton size="small" v-if="enable(scope.row, 'add')" @click="add(scope.row)" link type="primary">Add</ElButton>
-                    <ElButton size="small" v-if="enable(scope.row, 'commit')" @click="commit(scope.row)" link type="primary">Commit
-                    </ElButton>
+                    <!-- <ElButton size="small" v-if="enable(scope.row, 'commit')" @click="commit(scope.row)" link type="primary">Commit
+                    </ElButton> -->
                     <ElButton size="small" v-if="enable(scope.row, 'ignore')" @click="ignore(scope.row)" link type="info">Ignore
                     </ElButton>
 
