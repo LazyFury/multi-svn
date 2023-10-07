@@ -30,7 +30,16 @@
                         <div class="text-red-300" v-if="!p.validate">
                             <span>working copy is rename or move</span>
                         </div>
-                        <span class="text-xs dark:text-dark-50"> {{ dayjs(p.lastUpdate).format("YYYY-MM-DD HH:mm:ss") }}</span>
+                        <div class="flex flex-row items-center justify-between">
+                            <span class="text-xs dark:text-dark-50"> {{ dayjs(p.lastUpdate).format("YYYY-MM-DD HH:mm:ss") }}</span>
+
+                            <ElPopconfirm width="200" confirm-button-type="danger" title="confirm delete this?" @confirm="del(p)">
+                                <template #reference>
+                                    <ElButton link ><Icon class="text-xl text-gray-600" icon="mdi:delete-empty-outline"></Icon></ElButton>
+                                </template>
+                            </ElPopconfirm>
+                        </div>
+
                     </div>
                 </li>
             </ul>
@@ -53,7 +62,7 @@ import { ProjectImpl } from '../common/project';
 import router from '../router';
 import { wait } from '../common/utils/wait';
 import dayjs from 'dayjs';
-import { ElRadioButton, ElRadioGroup } from 'element-plus';
+import { ElPopconfirm, ElRadioButton, ElRadioGroup } from 'element-plus';
 
 const filter = ref("All")
 const projectIndex = useStorage(Keys.projectIndex, -1)
@@ -76,6 +85,9 @@ const filterProjects = computed(()=>{
 })
 
 
+const del = ({path}:{path:string}) => {
+    projects.value = projects.value.filter(p=>p.path != path)
+}
 
 const toDetail = (project: any, i: number) => {
     projectIndex.value = i
