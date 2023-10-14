@@ -141,7 +141,7 @@ export class SvnUtils {
 
 
     static async status(dir: string) {
-        return this.command(dir, "status")
+        return this.command(dir, "status","--no-ignore","--ignore-externals")
     }
 
     // is Clean

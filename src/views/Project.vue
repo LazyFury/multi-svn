@@ -10,6 +10,7 @@
                 <Icon v-if="!loading" icon="zondicons:refresh"></Icon>
                 <!-- {{ loading ? "loading" : "refresh" }} -->
             </ElButton>
+            <ElButton @click="ignoreSetting">ignore set</ElButton>
         </div>
 
         <ElTable size="small" ref="tableRef" :data="files" @select-all="handleSelectionAll">
@@ -125,6 +126,14 @@ const commit = async (file: any) => {
         await refresh()
         await refresh()
     }
+}
+
+const ignoreSetting = () => {
+    // print svn ignore setting
+    let proj = ProjectImpl.fromProject(project.value!)
+    SvnUtils.command(proj.path, "propget svn:ignore -R .").then((res) => {
+        console.log(res)
+    })
 }
 
 // add file 
