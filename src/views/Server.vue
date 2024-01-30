@@ -4,15 +4,15 @@
          on "{{ svnServerUrl }}"
         <div class="flex flex-row gap-2">
 
-            <ElCard class="flex-1" shadow="never">
-                <div class="blod text-lg">
-                <div v-for="f in files" :key="f">
-                    <span @click="changeDir(f)">{{ f.name }}</span>
+            <ElCard class="flex-1" shadow="never" style="overflow: auto;">
+                <div class="blod text-lg" style="overflow-y:auto;max-height: 64vh;">
+                    <div v-for="f in files" :key="f">
+                        <span @click="changeDir(f)">{{ f.name }}</span>
+                    </div>
                 </div>
-            </div>
             </ElCard>
 
-           <ElCard shadow="hover"> <div class="w-300px"> {{ selectInfo }}</div></ElCard>
+           <ElCard shadow="hover"> <div class="w-300px" style="overflow: auto;"> {{ selectInfo }}</div></ElCard>
         </div>
     </div>
 </template>
@@ -20,10 +20,10 @@
 <script lang="ts" setup>
 import { SvnUtils } from '../common/SvnUtils';
 const files = ref<Array<any>>([])
-const svnServerUrl = ref("svn://127.0.0.1")
+const svnServerUrl = ref("https://192.168.1.129/svn/jquery_workspace/2023")
 const selectInfo = ref<any>(null)
 
-SvnUtils.listServerToTree(svnServerUrl.value, true).then(res => {
+SvnUtils.listServerToTree(svnServerUrl.value, true).then(res => { 
     files.value = res
 })
 

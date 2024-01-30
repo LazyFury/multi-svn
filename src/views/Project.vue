@@ -10,10 +10,12 @@
                 <Icon v-if="!loading" icon="zondicons:refresh"></Icon>
                 <!-- {{ loading ? "loading" : "refresh" }} -->
             </ElButton>
-            <ElButton @click="ignoreSetting">ignore set</ElButton>
+            <!-- <ElButton @click="ignoreSetting">ignore set</ElButton> -->
+            <!-- <ElButton type="danger" @click="delAll">remove file</ElButton>  -->
         </div>
 
-        <ElTable size="small" ref="tableRef" :data="files" @select-all="handleSelectionAll">
+        <ElTable size="small" ref="tableRef" :data="files" @select-all="handleSelectionAll"
+        @selection-change="handleSelectionChange">
             <ElTableColumn type="selection" width="44"></ElTableColumn>
             <ElTableColumn prop="emoji" width="60px" label="icon"></ElTableColumn>
             <!-- <ElTableColumn prop="status" width="80px" label="status"></ElTableColumn> -->
@@ -60,6 +62,7 @@ import { ElPopconfirm, ElTable, TableInstance } from 'element-plus';
 import { useRoute } from 'vue-router';
 import { SvnUtils } from '../common/SvnUtils';
 import { fileIconFromFileName } from '../common/file';
+import { invoke } from '@tauri-apps/api';
 
 
 const projects = useStorage<Array<ProjectImpl>>(Keys.projects, [])
@@ -116,10 +119,12 @@ const del = async (file: any, i: number) => {
     console.log(i)
     let deleted = project.value?.delete(file.file)
     if (deleted) {
-        await refresh()
+        // await refresh()
     }
+    
 }
 
+// @ts-ignore
 const commit = async (file: any) => {
     let commited = project.value?.commit([file.file])
     if (commited) {
@@ -127,7 +132,29 @@ const commit = async (file: any) => {
         await refresh()
     }
 }
+const selection = ref<Array<any>>([])
+const handleSelectionChange = (e: any) => {
+    console.log(e)
+    selection.value = e;
+}
 
+// @ts-ignore
+const delAll = async () => {
+    for(let i = 0; i < selection.value.length; i++) {
+        invoke("run", { 
+        program:"rm",
+        args:[
+        project.value?.path + '/' + selection.value[i].file.trim(" ")
+        ],
+        dir:project.value?.path }).catch((e) => {
+            console.log(e)
+        }).then((res) => {
+            console.log(res)
+        })
+    }
+}
+
+// @ts-ignore
 const ignoreSetting = () => {
     // print svn ignore setting
     let proj = ProjectImpl.fromProject(project.value!)

@@ -141,7 +141,7 @@ export class SvnUtils {
 
 
     static async status(dir: string) {
-        return this.command(dir, "status","--no-ignore","--ignore-externals")
+        return this.command(dir, "status")
     }
 
     // is Clean
@@ -254,7 +254,7 @@ export class SvnUtils {
             case "M": return ["commit"]
             case "R": return ["commit"]
             case "X": return []
-            case "?": return ["add", "ignore"]
+            case "?": return ["add", "ignore","delete"]
             case "!": return ["delete","restore"]
             case "~": return []
             case "L": return []
